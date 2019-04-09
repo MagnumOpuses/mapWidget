@@ -42,7 +42,7 @@ class MapComponent extends Component {
 
     var vector = new OlHeatmapLayer({
       source: new OlVector({
-        url: 'https://geo.riksarkivet.se:8443/geoserver/TORA/ows?service=WFS&version=1.1.1&request=GetFeature&typeName=TORA:hsu-full&CQL_FILTER=preflabel%20ILIKE%20%27%25torp%25%27&outputFormat=application/json',
+        url: '/geojson.json',
         format: new GeoJSON(),
       }),
       blur: parseInt(blur),
@@ -86,6 +86,7 @@ class MapComponent extends Component {
   }
 
   userAction() {
+    //window.MyVars = "New value";
     this.setState({ center: [2005777, 8226038], zoom: 8 });
   }
 
