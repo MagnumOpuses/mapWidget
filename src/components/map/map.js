@@ -14,7 +14,7 @@ class MapComponent extends Component {
     super(props);
 
     let blur = 10;
-    let radius = 4;
+    let radius = 5;
 
     this.state = { center: [1692777, 8226038], zoom: 5 };
     
@@ -23,7 +23,7 @@ class MapComponent extends Component {
       tileSize: 256,
       extent: [-20037508.342789, -20037508.342789, 20037508.342789, 20037508.342789],
       resolutions: [156543.0339280410, 78271.51696402048, 39135.75848201023, 19567.87924100512, 9783.939620502561, 4891.969810251280, 2445.984905125640, 1222.992452562820, 611.4962262814100, 305.7481131407048, 152.8740565703525, 76.43702828517624, 38.21851414258813, 19.10925707129406,9.554628535647032, 4.777314267823516, 2.388657133911758, 1.194328566955879],
-      matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+      matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     });
 
     const LmMap = new OlLayerTile({
@@ -42,13 +42,31 @@ class MapComponent extends Component {
 
     var vector = new OlHeatmapLayer({
       source: new OlVector({
-        url: '/geojson.json',
+        url: '/smallGeo.json',
         format: new GeoJSON(),
       }),
       blur: parseInt(blur),
       radius: parseInt(radius),
       opacity: 0.8,
-      gradient: ['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //['#00f', '#0ff', '#0f0', '#ff0', '#f00']
+      gradient: ['#BDBDBD', '#BDBDBD', '#A6F3ED', '#A6F3ED', '#02DECC'], //['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //
+    });
+
+    vector.getSource().on('addfeature', function(event) {
+      /*
+      var level = event.feature.get('level');
+      switch(level) {
+        case 'high':
+          level = 1;
+          break;
+        case 'medium':
+          level = .5;
+          break;
+        default:
+          level = .1;
+        break;
+      }
+      */
+      event.feature.set('weight', Math.random());  // set weight on point 0 -> 1
     });
 
     this.olmap = new OlMap({
