@@ -5,8 +5,10 @@ import OlLayerTile from "ol/layer/Tile";
 import OlSourceWMTS from "ol/source/WMTS";
 import OlGridWMTS from "ol/tilegrid/WMTS";
 import OlHeatmapLayer from "ol/layer/Heatmap";
-import OlVector from "ol/source/Vector";
+import OlVectorLayer from 'ol/layer/Vector.js';
+import OlVectorSource from "ol/source/Vector";
 import {GeoJSON} from 'ol/format';
+import {Fill, Stroke, Style, Text} from 'ol/style.js';
 import 'ol/ol.css';
 
 class MapComponent extends Component {
@@ -15,10 +17,9 @@ class MapComponent extends Component {
 
     let blur = 10;
     let radius = 5;
-
     this.state = { center: [1692777, 8226038], zoom: 5 };
     
-    const layer = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/e8b5802b-17ee-310c-a4ad-d8c1955fb315/";
+    const layer = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/e8b5802b-17ee-310c-a4ad-d8c1955fb315/';
     const tileGrid3857 = new OlGridWMTS({
       tileSize: 256,
       extent: [-20037508.342789, -20037508.342789, 20037508.342789, 20037508.342789],
@@ -37,21 +38,54 @@ class MapComponent extends Component {
         tited: true,
         style: 'default',
         crossOrigin: 'anonymous'
-      })
+      }),
+      name: 'Karta'
     });
 
-    var vector = new OlHeatmapLayer({
-      source: new OlVector({
+    const Heatmap = new OlHeatmapLayer({
+      source: new OlVectorSource({
         url: '/smallGeo.json',
         format: new GeoJSON(),
       }),
+      name: 'framtid',
       blur: parseInt(blur),
       radius: parseInt(radius),
       opacity: 0.8,
       gradient: ['#BDBDBD', '#BDBDBD', '#A6F3ED', '#A6F3ED', '#02DECC'], //['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //
     });
 
-    vector.getSource().on('addfeature', function(event) {
+    const kommunerLayer = new OlVectorLayer({
+      source: new OlVectorSource({
+        url: '/kommuner-kustlinjer.geo.json',
+        format: new GeoJSON()
+      }),
+      name: 'Kommuner',
+      style: function(feature) {
+        style.getText().setText(feature.get('name'));
+        return style;
+      }
+    });
+
+    const laenLayer = new OlVectorLayer({
+      source: new OlVectorSource({
+        url: '/laen-kustlinjer.geo.json',
+        format: new GeoJSON()
+      }),
+      name: 'Län'
+      /*
+      style: function(feature) {
+        style.getText().setText(feature.get('name'));
+        return style;
+      }
+      */
+    });
+    const groundLayers = [ LmMap ];
+    this.topLayers = [ Heatmap, kommunerLayer, laenLayer ];
+
+
+
+
+    Heatmap.getSource().on('addfeature', function(event) {
       /*
       var level = event.feature.get('level');
       switch(level) {
@@ -71,7 +105,7 @@ class MapComponent extends Component {
 
     this.olmap = new OlMap({
       target: null,
-      layers: [ LmMap, vector ],
+      layers: [...groundLayers, ...this.topLayers],
       view: new OlView({
         center: this.state.center,
         zoom: this.state.zoom
@@ -86,14 +120,89 @@ class MapComponent extends Component {
   }
 
   componentDidMount() {
-    this.olmap.setTarget("map");
+    const map = this.olmap;
+    map.setTarget('map');
 
     // Listen to map changes
-    this.olmap.on("moveend", () => {
-      let center = this.olmap.getView().getCenter();
-      let zoom = this.olmap.getView().getZoom();
+    map.on('moveend', (evt) => {
+      let center = map.getView().getCenter();
+      let zoom = map.getView().getZoom();
       this.setState({ center, zoom });
     });
+
+    map.on('pointermove', function(evt) {
+      if (evt.dragging) {
+        return;
+      }
+      let pixel = map.getEventPixel(evt.originalEvent);
+      displayFeatureInfo(pixel);
+    });
+
+    map.on('click', function(evt) {
+      displayFeatureInfo(evt.pixel, 'selected');
+    });
+
+    let hover;
+    let selected;
+
+    const displayFeatureInfo = function(pixel,type = 'hover') {
+      const feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+        return feature;
+      });
+      /*
+      var info = document.getElementById('info');
+      if (feature) {
+        info.innerHTML = feature.getId() + ': ' + feature.get('name');
+      } else {
+        info.innerHTML = '&nbsp;';
+      }
+      */
+            
+      if(type == 'selected')
+      {
+        if (feature !== selected) {
+          if (selected) {
+            selectedOverlay.getSource().removeFeature(selected);
+          }
+          if (feature) {
+            selectedOverlay.getSource().addFeature(feature);
+          }
+          selected = feature;
+        }
+      }
+      else 
+      {
+        if (feature !== hover) {
+          if (hover) {
+            hoverOverlay.getSource().removeFeature(hover);
+          }
+          if (feature) {
+            hoverOverlay.getSource().addFeature(feature);
+          }
+          hover = feature;
+        }
+      }
+
+
+    };
+
+    const hoverOverlay = new OlVectorLayer({
+      source: new OlVectorSource(),
+      map: this.olmap,
+      style: function(feature) {
+        highlightStyle.getText().setText(feature.get('name'));
+        return highlightStyle;
+      }
+    });
+    const selectedOverlay = new OlVectorLayer({
+      source: new OlVectorSource(),
+      map: this.olmap,
+      style: function(feature) {
+        selectedStyle.getText().setText(feature.get('name'));
+        return selectedStyle;
+      }
+    });
+  
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -101,6 +210,11 @@ class MapComponent extends Component {
     let zoom = this.olmap.getView().getZoom();
     if (center === nextState.center && zoom === nextState.zoom) return false;
     return true;
+  }
+
+  toggleLayer(index) {
+    const layer = this.topLayers[index];
+    layer.setVisible(!layer.getVisible());
   }
 
   userAction() {
@@ -112,7 +226,13 @@ class MapComponent extends Component {
     this.updateMap(); // Update map on render?
     return (
       <div>
-        <div id="map" style={{ width: "100%", height: "100%" }}></div>
+        <div id="map" style={{ width: "100%", height: "100%" }}>
+          <ul>
+          {this.topLayers.map((layer, i) => {     
+            return (<li><a href="#" onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
+          })}
+          </ul>
+        </div>
         <button onClick={e => this.userAction()}>Move it, move it</button>
       </div>
     );
@@ -120,3 +240,63 @@ class MapComponent extends Component {
 }
 
 export default MapComponent;
+
+var style = new Style({
+  fill: new Fill({
+    color: 'rgba(255, 255, 255, 0.6)'
+  }),
+  stroke: new Stroke({
+    color: '#319FD3',
+    width: 1
+  }),
+  text: new Text({
+    font: '12px Calibri,sans-serif',
+    fill: new Fill({
+      color: '#000'
+    }),
+    stroke: new Stroke({
+      color: '#fff',
+      width: 3
+    })
+  })
+});
+
+var highlightStyle = new Style({
+  stroke: new Stroke({
+    color: '#f00',
+    width: 1
+  }),
+  fill: new Fill({
+    color: 'rgba(255,0,0,0.1)'
+  }),
+  text: new Text({
+    font: '12px Calibri,sans-serif',
+    fill: new Fill({
+      color: '#000'
+    }),
+    stroke: new Stroke({
+      color: '#f00',
+      width: 3
+    })
+  })
+});
+
+var selectedStyle = new Style({
+  stroke: new Stroke({
+    color: '#f00',
+    width: 1
+  }),
+  fill: new Fill({
+    color: 'rgba(200,200,200,0.6)'
+  }),
+  text: new Text({
+    font: '12px Calibri,sans-serif',
+    fill: new Fill({
+      color: '#000'
+    }),
+    stroke: new Stroke({
+      color: '#f00',
+      width: 3
+    })
+  })
+});
