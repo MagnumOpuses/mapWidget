@@ -66,3 +66,12 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 ### `npm run build` fails to minify
 
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+
+
+## OpenLayers
+
+this project uses OpenLayers to show maps from Lantmäteriet(https://www.lantmateriet.se/sv/Kartor-och-geografisk-information/Geodatatjanster/Visningstjanster/?faq=7e09)
+
+We use Vector layers, heatmap and features thru OpenLayers if you want to know more about how to use them read it in the OpenLayers documentation. 
+OpenLayers documentation lives here:
+https://openlayers.org/en/latest/apidoc/
