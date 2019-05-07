@@ -240,25 +240,43 @@ class MapComponent extends Component
     setTimeout(() => this.loadValues(level,false), 2000);		
   }
 
+
+  colorCodeValue(total, value)
+  {
+    const colors = [
+      'rgba(74,239,226, 0.4)',
+      'rgba(4,203,187, 0.4)',
+      'rgba(0,132,121, 0.4)',
+      'rgba(1,88,81, 0.4)'
+    ];
+    const one4th = total / 4;
+    let x = 3;
+    if (value < (one4th * 3)) x = 2;
+    if (value < (one4th * 2)) x = 1;
+    if (value < one4th) x = 0;
+    return colors[x];
+  }
+
   async loadValues(area, zoomResult = true) 
   {
-    const parent = this;
     const resp = await api(this.state.q);
-    let marks = [];
     const layer = this.findLayerByValue('name', area);
+    let marks = [];
     let found = false;
+    const total = resp.data.results.total;
+    const colorCode = this.colorCodeValue;
     resp.data.results[area].forEach(fetchedRow => {
       found = false;
       layer.getSource().forEachFeature(function(feature)
       {
         if(found) return;
         let name = feature.get('name');
-        //console.log({ name: name, area: area, fetchname: fetchedRow.name })
-        if(name == fetchedRow.name)
+        if(name === fetchedRow.name)
         {
           marks.push({
             feature: feature,
-            text: fetchedRow.value.toString()
+            text: fetchedRow.value.toString(),
+            color: colorCode(total,fetchedRow.value.toString())
           });
           found = true;
           return;
@@ -267,7 +285,7 @@ class MapComponent extends Component
       
     });
     if(marks.length) {
-      parent.addMarks(
+      this.addMarks(
         marks, 
         { 
           layerExtent: true, 
@@ -409,7 +427,7 @@ class MapComponent extends Component
       this.removeMark(this.selected[this.state.level].name, 'selected');
     }
     feature.setStyle(selectedStyle);
-    selectedLayer.getSource().addFeature(feature.clone());
+    selectedLayer.getSource().addFeature(feature);
     this.selected[type].name = feature.get('name');
     this.selected[type].zoom = this.state.zoom;
     if (this.selected['municipality'].zoom === undefined) 
@@ -435,7 +453,8 @@ class MapComponent extends Component
       layer: '',
       id: 'selected',
       clear: false,
-      zoomResult: false
+      zoomResult: false,
+      bgColor: 'rgba(236,241,240, 0.4)'
     } 
     let options = Object.assign(standardsOpt, opt);
     const selectedLayer = this.findLayerByValue('name', options.layer);
@@ -451,8 +470,13 @@ class MapComponent extends Component
 
       feature.setStyle(function(feature) 
       {
+        let fill = new Style({
+          fill: new Fill({
+            color: mark.color
+          })
+        });
         labelStyle.getText().setText(mark.text);
-        return [circleStyle,labelStyle];
+        return [circleStyle,labelStyle,fill];
       });
       //console.log('styling...');
       //feature.setId(options.id);
@@ -556,7 +580,6 @@ const circleStyle = new Style({
     })
   }),
   geometry: function(feature){
-    console.log(feature);
     let retPoint;
     if (feature.getGeometry().getType() === 'MultiPolygon') {
       retPoint =  feature.getGeometry().getPolygon(0).getInteriorPoint();
@@ -577,21 +600,6 @@ const labelStyle = new Style({
     }
     return retPoint;
   },
-  image: new CircleStyle({
-    radius: 10,
-    stroke: new Stroke({
-      color: '#000'
-    }),
-    fill: new Fill({
-      color: 'orange'
-    })
-  }),
-  stroke: new Stroke(
-    {
-      color: '#f00',
-      width: 4
-    }
-  ),
   text: new Text(
     {
     font: 'bold 12px Calibri,sans-serif',
@@ -602,6 +610,12 @@ const labelStyle = new Style({
         color: '#000'
       }
     ),
+    stroke: new Stroke(
+      {
+        color: '#ccc',
+        width: 2
+      }
+    )
     })
 });
 
@@ -609,26 +623,15 @@ const style = new Style(
   {
   fill: new Fill(
     {
-      color: 'rgba(255, 255, 255, 0.4)'
+      color: 'rgba(236,241,240, 0.4)'
     }
   ),
   stroke: new Stroke(
     {
-      color: '#319FD3',
+      color: '#333',
       width: 1
     }
-  ),
-  text: new Text({
-    font: '12px Calibri,sans-serif',
-    overflow: true,
-    fill: new Fill({
-      color: '#000'
-    }),
-    stroke: new Stroke({
-      color: '#fff',
-      width: 3
-    })
-  })
+  )
 });
 
 const highlightStyle = new Style(
@@ -636,7 +639,7 @@ const highlightStyle = new Style(
   stroke: new Stroke(
     {
       color: '#f00',
-      width: 4
+      width: 2
     }
   ),
   fill: new Fill(
@@ -660,30 +663,13 @@ const selectedStyle = new Style(
   {
   stroke: new Stroke(
     {
-      color: '#0f0',
+      color: '#333',
       width: 5
     }
   ),
   fill: new Fill(
     {
-      color: 'rgba(0,200,0,0.8)'
-    }
-  ),
-  text: new Text(
-    {
-      font: 'bold 16px Calibri,sans-serif',
-      overflow: true,
-      fill: new Fill(
-        {
-          color: '#000'
-        }
-      ),
-      stroke: new Stroke(
-        {
-          color: '#fff',
-          width: 1
-        }
-      )
+      color: 'rgba(236,241,240, 0.4)'
     }
   )
 });
