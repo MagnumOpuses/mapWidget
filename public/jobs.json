@@ -1,0 +1,74 @@
+{
+  "results" : {
+    "total" : 1276,
+    "county": [
+      {
+      "name" : "Stockholms län",
+      "value" : 567
+      },{
+        "name" : "Skåne län",
+        "value" : 37  
+      },{
+        "name" : "Dalarnas län",
+        "value" : 147  
+      },{
+        "name" : "Örebro län",
+        "value" : 576  
+      },{
+        "name" : "Norrbottens län",
+        "value" : 222  
+      }
+    ],
+    "municipality" : [
+      {
+        "name" : "Trelleborgs kommun",
+        "value" : 4
+      },{
+        "name" : "Skurups kommun",
+        "value" : 45
+      },{
+        "name" : "Malmö kommun",
+        "value" : 42
+      },{
+        "name" : "Borgholms kommun",
+        "value" : 24
+      },{
+        "name" : "Överkalix kommun",
+        "value" : 3
+      },{
+        "name" : "Östhammars kommun",
+        "value" : 40
+      },{
+        "name" : "Örebro kommun",
+        "value" : 41
+      },{
+        "name" : "Lidingö kommun",
+        "value" : 14
+      },{
+        "name" : "Stockholms kommun",
+        "value" : 24
+      },{
+        "name" : "Nacka kommun",
+        "value" : 34
+      },{
+        "name" : "Österåkers kommun",
+        "value" : 44
+      },{
+        "name" : "Tyresö kommun",
+        "value" : 14
+      },{
+        "name" : "Täby kommun",
+        "value" : 44
+      },{
+        "name" : "Vallentuna kommun",
+        "value" : 33
+      },{
+        "name" : "Danderyds kommun",
+        "value" : 22
+      },{
+        
+      }
+    ]
+  }
+}
+
