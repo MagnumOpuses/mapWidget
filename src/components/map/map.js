@@ -9,10 +9,18 @@ import OlHeatmapLayer from "ol/layer/Heatmap";
 import OlVectorLayer from 'ol/layer/Vector.js';
 import OlVectorSource from "ol/source/Vector";
 import {GeoJSON} from 'ol/format';
-import {Fill, Stroke, Style, Text, Circle as CircleStyle,} from 'ol/style.js';
+import {Fill, Style } from 'ol/style.js';
 import 'ol/ol.css';
 
-import api from '../api/api'
+import mapstyling from './styling';
+import api from '../api/api';
+
+const styling = new mapstyling();
+
+class areaSelected {
+    zoom = 0;
+    name = '';
+}
 
 class MapComponent extends Component 
 {
@@ -25,27 +33,31 @@ class MapComponent extends Component
     
     this.state = 
     { 
-      center: [1692777, 8226038], 
-      zoom: 5 , 
+      center: [
+        Number(process.env.REACT_APP_MAP_START_LON), 
+        Number(process.env.REACT_APP_MAP_START_LAT)
+      ], 
+      zoom: Number(process.env.REACT_APP_MAP_START_ZOOM), 
       extent: [],
       q: '',
       level: 'county',
-      loaded: false
     };
+
+    this.predefinedColor = 
+    [
+      process.env.REACT_APP_COLOR1,
+      process.env.REACT_APP_COLOR2,
+      process.env.REACT_APP_COLOR3,
+      process.env.REACT_APP_COLOR4,
+    ];
+
     this.selected = 
     {
-      county: {
-        zoom: 0,
-        name: '',
-  
-      },
-      municipality: {
-        zoom: 0,
-        name: '',
-      }
+      county: new areaSelected(),
+      municipality: new areaSelected()
     };
     
-    const layer = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/e8b5802b-17ee-310c-a4ad-d8c1955fb315/';
+    const layer = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/' + process.env.REACT_APP_LMTOKEN + '/';
     const tileGrid3857 = new OlGridWMTS(
       {
         tileSize: 256,
@@ -87,9 +99,10 @@ class MapComponent extends Component
         blur: parseInt(blur),
         radius: parseInt(radius),
         opacity: 0.8,
-        gradient: ['#BDBDBD', '#BDBDBD', '#A6F3ED', '#A6F3ED', '#02DECC'], //['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //
+        gradient: this.predefinedColor.reverse(), //['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //
       }
     );
+    this.predefinedColor.reverse();
 
     const county = new OlVectorLayer(
       {
@@ -99,7 +112,7 @@ class MapComponent extends Component
             format: new GeoJSON()
           }),
         name: 'county',
-        style: style,
+        style: styling.default,
         zIndex: 20
       }
     );
@@ -108,7 +121,7 @@ class MapComponent extends Component
         source: new OlVectorSource(),
         name: 'countySelected',
         zIndex: 21,
-        style: selectedStyle,
+        style: styling.selected,
 
       }
     );
@@ -122,7 +135,7 @@ class MapComponent extends Component
           }
         ),
         name: 'municipality',
-        style: style,
+        style: styling.default,
         zIndex: 30,
         visible: false,
       }
@@ -134,7 +147,7 @@ class MapComponent extends Component
         name: 'municipalitySelected',
         zIndex: 31,
         visible: false,
-        style: selectedStyle,
+        style: styling.selected,
 
       }
     );
@@ -145,7 +158,7 @@ class MapComponent extends Component
         name: 'selected',
         zIndex: 5,
         visible: false,
-        style: selectedStyle
+        style: styling.selected
       }
     );
 
@@ -179,7 +192,9 @@ class MapComponent extends Component
         view: new OlView(
           {
             center: this.state.center,
-            zoom: this.state.zoom
+            zoom: this.state.zoom,
+            extent: [-20037508.342789, -20037508.342789, 20037508.342789, 20037508.342789],
+            minZoom: 4.8
           })
       }
     );
@@ -240,21 +255,14 @@ class MapComponent extends Component
     setTimeout(() => this.loadValues(level,false), 2000);		
   }
 
-
   colorCodeValue(total, value)
   {
-    const colors = [
-      'rgba(74,239,226, 0.4)',
-      'rgba(4,203,187, 0.4)',
-      'rgba(0,132,121, 0.4)',
-      'rgba(1,88,81, 0.4)'
-    ];
     const one4th = total / 4;
     let x = 3;
     if (value < (one4th * 3)) x = 2;
     if (value < (one4th * 2)) x = 1;
     if (value < one4th) x = 0;
-    return colors[x];
+    return this.predefinedColor[x];
   }
 
   async loadValues(area, zoomResult = true) 
@@ -264,7 +272,7 @@ class MapComponent extends Component
     let marks = [];
     let found = false;
     const total = resp.data.results.total;
-    const colorCode = this.colorCodeValue;
+    const parent = this;
     resp.data.results[area].forEach(fetchedRow => {
       found = false;
       layer.getSource().forEachFeature(function(feature)
@@ -276,7 +284,7 @@ class MapComponent extends Component
           marks.push({
             feature: feature,
             text: fetchedRow.value.toString(),
-            color: colorCode(total,fetchedRow.value.toString())
+            color: parent.colorCodeValue(total,fetchedRow.value.toString())
           });
           found = true;
           return;
@@ -307,6 +315,8 @@ class MapComponent extends Component
     // Listen to map changes
     map.on('moveend', (evt) => 
     {
+      //console.log(this.state);
+      //console.log(this.selected);
       let center = map.getView().getCenter();
       let zoom = map.getView().getZoom();
       this.setState({ center, zoom });
@@ -314,11 +324,7 @@ class MapComponent extends Component
         if(this.selected.county.zoom !== 0 && this.selected.county.zoom > this.state.zoom) {
           //console.log('unselect county');
           this.removeMark(this.selected.county.name, 'selected');
-          this.selected.county = 
-          {
-            zoom: 0,
-            name: '',
-          }
+          this.selected.county = new areaSelected();
           parent.toggleLevel('county');
 
         }
@@ -326,11 +332,7 @@ class MapComponent extends Component
           //console.log('unselect municipality');
 
           this.removeMark(this.selected.municipality.name, 'selected');
-          this.selected.municipality = 
-          {
-            zoom: 0,
-            name: '',
-          }
+          this.selected.municipality = new areaSelected();
           parent.toggleLevel('county');
 
         }
@@ -354,13 +356,13 @@ class MapComponent extends Component
         if(feature !== undefined)
         {
           // admin_level 4 = county
-          if(parent.selected.county.name != feature.get('name') && feature.get('admin_level') == 4){
+          if(parent.selected.county.name !== feature.get('name') && feature.get('admin_level') === '4'){
             //console.log([ feature, feature.get('name') ]);
             parent.addSelect(feature, 'county');
             parent.toggleLevel('municipality');
           };
           // admin_level 7 = municipality
-          if(parent.selected.municipality.name != feature.get('name') && feature.get('admin_level') == 7){
+          if(parent.selected.municipality.name !== feature.get('name') && feature.get('admin_level') === '7'){
             //console.log([ feature.get('admin_level'), feature.get('name')]);
             parent.addSelect(feature, 'municipality');
 
@@ -376,10 +378,10 @@ class MapComponent extends Component
     {
       const feature = map.forEachFeatureAtPixel(pixel, function(feature) 
       {
-        if(parent.state.level == 'county' && feature.get('admin_level') == 4) {
+        if(parent.state.level === 'county' && feature.get('admin_level') === '4') {
           return feature;
         }
-        if(parent.state.level == 'municipality' && feature.get('admin_level') == 7) {
+        if(parent.state.level === 'municipality' && feature.get('admin_level') === '7') {
           return feature;
         }
 
@@ -406,8 +408,8 @@ class MapComponent extends Component
       zIndex: 50,
       style: function(feature) 
       {
-        labelStyle.getText().setText(feature.get('name'));
-        return [labelStyle,highlightStyle];
+        styling.label.getText().setText(feature.get('name'));
+        return [styling.label,styling.highlight];
       }
     });
   }
@@ -419,6 +421,7 @@ class MapComponent extends Component
     if (center === nextState.center && zoom === nextState.zoom) return false;
     return true;
   }
+  
   addSelect(feature,type) {
     const selectedLayer = this.findLayerByValue('name', 'selected');
     if (this.selected[this.state.level].name.length > 0)
@@ -426,7 +429,7 @@ class MapComponent extends Component
       //select one county or municipality at the time
       this.removeMark(this.selected[this.state.level].name, 'selected');
     }
-    feature.setStyle(selectedStyle);
+    feature.setStyle(styling.selected);
     selectedLayer.getSource().addFeature(feature);
     this.selected[type].name = feature.get('name');
     this.selected[type].zoom = this.state.zoom;
@@ -475,8 +478,8 @@ class MapComponent extends Component
             color: mark.color
           })
         });
-        labelStyle.getText().setText(mark.text);
-        return [circleStyle,labelStyle,fill];
+        styling.label.getText().setText(mark.text);
+        return [styling.circle,styling.label,fill];
       });
       //console.log('styling...');
       //feature.setId(options.id);
@@ -487,12 +490,12 @@ class MapComponent extends Component
     let extent = [];
     if (options.layerExtent) 
     {
-      console.log('zoom to layer');
+      //console.log('zoom to layer');
       extent = selectedLayer.getSource().getExtent();
     }
     if(!options.layerExtent)
     {
-      console.log('zoom to feature');
+      //console.log('zoom to feature');
       extent = feature.getGeometry().getExtent();
     }
     if(options.zoomResult) {
@@ -564,112 +567,3 @@ class MapComponent extends Component
 }
 
 export default MapComponent;
-
-
-const circleStyle = new Style({
-  image: new CircleStyle({
-    radius: 12,
-    stroke: new Stroke(
-      {
-        color: '#000',
-        width: 1
-      }
-    ),
-    fill: new Fill({
-      color: '#FFF'
-    })
-  }),
-  geometry: function(feature){
-    let retPoint;
-    if (feature.getGeometry().getType() === 'MultiPolygon') {
-      retPoint =  feature.getGeometry().getPolygon(0).getInteriorPoint();
-    } else if (feature.getGeometry().getType() === 'Polygon') {
-      retPoint = feature.getGeometry().getInteriorPoint();
-    }
-    return retPoint;
-  }
-})
-
-const labelStyle = new Style({
-  geometry: function(feature){
-    let retPoint;
-    if (feature.getGeometry().getType() === 'MultiPolygon') {
-      retPoint =  feature.getGeometry().getPolygon(0);
-    } else if (feature.getGeometry().getType() === 'Polygon') {
-      retPoint = feature.getGeometry();
-    }
-    return retPoint;
-  },
-  text: new Text(
-    {
-    font: 'bold 12px Calibri,sans-serif',
-    overflow: true,
-    placement : "point",
-    fill: new Fill(
-      {
-        color: '#000'
-      }
-    ),
-    stroke: new Stroke(
-      {
-        color: '#ccc',
-        width: 2
-      }
-    )
-    })
-});
-
-const style = new Style(
-  {
-  fill: new Fill(
-    {
-      color: 'rgba(236,241,240, 0.4)'
-    }
-  ),
-  stroke: new Stroke(
-    {
-      color: '#333',
-      width: 1
-    }
-  )
-});
-
-const highlightStyle = new Style(
-  {
-  stroke: new Stroke(
-    {
-      color: '#f00',
-      width: 2
-    }
-  ),
-  fill: new Fill(
-    {
-      color: 'rgba(255,0,0,0.5)'
-    }
-  ),
-  text: new Text(
-    {
-    font: 'bold 12px Calibri,sans-serif',
-    overflow: true,
-    fill: new Fill(
-      {
-        color: '#000'
-      }
-    ),
-  })
-});
-
-const selectedStyle = new Style(
-  {
-  stroke: new Stroke(
-    {
-      color: '#333',
-      width: 5
-    }
-  ),
-  fill: new Fill(
-    {
-      color: 'rgba(236,241,240, 0.4)'
-    }
-  )
-});
