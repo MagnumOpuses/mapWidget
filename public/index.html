@@ -22,10 +22,42 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>JobTech Map</title>
+    <script>
+
+      document.addEventListener("DOMContentLoaded", function(event) { 
+
+        var jtv = document.getElementById('jobTechVaribles');
+        var s = document.getElementById('search');
+
+        s.addEventListener('change', function() {
+            jtv.setAttribute('data-location', this.value);
+        });
+
+
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+        var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type == "attributes") {
+              s.value = jtv.getAttribute('data-location');
+            }
+          });
+        });
+
+        observer.observe(jtv, {
+          attributes: true //configure it to listen to attribute changes
+        });
+      });
+    </script>
   </head>
   <body>
+    <div id="jobTechVaribles"></div>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <form>
+      <input type="text" name="search" id="search" style="margin: 20px;
+      font-size: 16px;
+      padding: 5px;"/>
+    </form>
     <div id="root"></div>
     <!--
       This HTML file is a template.

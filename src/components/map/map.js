@@ -72,7 +72,6 @@ class MapComponent extends Component
       zIndex: 0
     });
 
-
     const groundLayers = [ LmMap ];
     this.topLayers = [ layers.Heatmap, layers.municipality, layers.municipalitySelected, layers.county, layers.countySelected, layers.selected ];
 
@@ -187,32 +186,44 @@ class MapComponent extends Component
     return this.predefinedColor[x];
   }
 
+  findFeature(featureName, layers = ['county', 'municipality'])
+  {
+    let found = {};
+    layers.forEach(layerName => {
+      let layer = this.findLayerByValue('name', layerName);
+      layer.getSource().forEachFeature(function(feature)
+      {
+        if(found.feature) return;
+        if(feature.get('name') === featureName) 
+        {
+          found = {
+            feature: feature,
+            level: layerName
+          }
+        }
+      });
+    });
+    return found;
+
+  }
+
   async loadValues(area, zoomResult = true) 
   {
     const resp = await api(this.state.q);
-    const layer = this.findLayerByValue('name', area);
     let marks = [];
     let found = false;
     const total = resp.data.results.total;
     const parent = this;
     resp.data.results[area].forEach(fetchedRow => {
-      found = false;
-      layer.getSource().forEachFeature(function(feature)
-      {
-        if(found) return;
-        let name = feature.get('name');
-        if(name === fetchedRow.name)
+        found = this.findFeature(fetchedRow.name, [area])
+        if(found.feature)
         {
           marks.push({
-            feature: feature,
+            feature: found.feature,
             text: fetchedRow.value.toString(),
             color: parent.colorCodeValue(total,fetchedRow.value.toString())
           });
-          found = true;
-          return;
         }
-      });
-      
     });
     if(marks.length) {
       this.addMarks(
@@ -227,10 +238,41 @@ class MapComponent extends Component
 
   }
 
+  handleChange(e) 
+  {
+    this.setState({ q: this.jobTechVaribles.getAttribute('data-location') });
+    let found = {};
+    found = this.findFeature(this.state.q);
+    if(this.state.level !== found.level) this.toggleLevel(found.level);
+    if(found.feature)
+    {
+      this.addSelect(found.feature, found.level);
+    } 
+    else
+    {
+      console.log('can not find : ' + this.state.q);
+    }
+  }
+
+  globalJobTechVariables()
+  {
+    this.jobTechVaribles = document.getElementById('jobTechVaribles');
+    if(!this.jobTechVaribles) {
+      let jobTechVaribles = document.createElement("div");
+      jobTechVaribles.setAttribute('id','jobTechVaribles');
+      this.jobTechVaribles = document.body.appendChild(jobTechVaribles);
+    }
+
+    this.handleChange = this.handleChange.bind(this);
+    document.body.addEventListener('change', this.handleChange);
+  }
+
   componentDidMount() 
   {
+    this.globalJobTechVariables();
     const parent = this;
     const map = this.olmap;
+
     map.setTarget('map');
     setTimeout(() => this.loadValues('county'), 2000);		
 
@@ -345,6 +387,7 @@ class MapComponent extends Component
   }
   
   addSelect(feature,type) {
+
     const selectedLayer = this.findLayerByValue('name', 'selected');
     if (this.selected[this.state.level].name.length > 0)
     {
@@ -362,13 +405,22 @@ class MapComponent extends Component
     feature.setId(this.selected[type].name);
     this.toggleLayer(selectedLayer, true);
     let extent = feature.getGeometry().getExtent();
-
     this.setState(
       { 
+        q: feature.get('name'),
         center: getCenter(extent), 
         extent: extent 
       }
     );
+
+    if(this.jobTechVaribles)
+    {
+      if(this.jobTechVaribles.getAttribute('data-location') !== this.state.q)
+      {
+        this.jobTechVaribles.setAttribute('data-location', this.state.q);
+      }
+    }
+
   }
 
   addMarks(marks, opt) 
@@ -393,7 +445,7 @@ class MapComponent extends Component
       feature = mark.feature.clone();
       selectedLayer.getSource().addFeature(feature);
 
-      feature.setStyle(function(feature) 
+      feature.setStyle(function() 
       {
         let fill = new Style({
           fill: new Fill({
@@ -410,16 +462,8 @@ class MapComponent extends Component
 
     this.toggleLayer(selectedLayer, true);
     let extent = [];
-    if (options.layerExtent) 
-    {
-      //console.log('zoom to layer');
-      extent = selectedLayer.getSource().getExtent();
-    }
-    if(!options.layerExtent)
-    {
-      //console.log('zoom to feature');
-      extent = feature.getGeometry().getExtent();
-    }
+    if(options.layerExtent) extent = selectedLayer.getSource().getExtent();
+    if(!options.layerExtent) extent = feature.getGeometry().getExtent();
     if(options.zoomResult) {
       this.setState(
         { 
@@ -441,7 +485,8 @@ class MapComponent extends Component
   findLayerByValue(key, name)
   {
     let found = {};
-    this.topLayers.forEach((layer) => {
+    this.topLayers.forEach((layer) => 
+    {
       if(layer.get(key) === name) found = layer; 
     });
     return found;
@@ -449,12 +494,7 @@ class MapComponent extends Component
 
   toggleLayer(layer, value='') 
   {
-    if(Number.isInteger(layer))
-    {
-      layer = this.topLayers[layer];
-      //console.log('layer toggle by index');
-    }
-
+    if(Number.isInteger(layer)) layer = this.topLayers[layer];
     if(value.length < 1) 
     {
       layer.setVisible(!layer.getVisible());
