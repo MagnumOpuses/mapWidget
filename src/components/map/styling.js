@@ -1,6 +1,6 @@
 import {Fill, Stroke, Style, Text, Circle as CircleStyle,} from 'ol/style.js';
 
-class mapstyling 
+class mapStyling 
 {
   circle = new Style({
     image: new CircleStyle({
@@ -102,13 +102,9 @@ class mapstyling
         color: '#333',
         width: 5
       }
-    ),
-    fill: new Fill(
-      {
-        color: 'rgba(236,241,240, 0.4)'
-      }
     )
   });
+
 }
 
-export default mapstyling;
+export default mapStyling;

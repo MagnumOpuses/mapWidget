@@ -4,18 +4,17 @@ import OlView from "ol/View";
 import {getCenter} from 'ol/extent.js';
 import OlLayerTile from "ol/layer/Tile";
 import OlSourceWMTS from "ol/source/WMTS";
-import OlGridWMTS from "ol/tilegrid/WMTS";
-import OlHeatmapLayer from "ol/layer/Heatmap";
 import OlVectorLayer from 'ol/layer/Vector.js';
 import OlVectorSource from "ol/source/Vector";
-import {GeoJSON} from 'ol/format';
 import {Fill, Style } from 'ol/style.js';
 import 'ol/ol.css';
 
-import mapstyling from './styling';
+import mapStyling from './styling';
+import mapLayers from './layers'
 import api from '../api/api';
 
-const styling = new mapstyling();
+const styling = new mapStyling();
+const layers = new mapLayers();
 
 class areaSelected {
     zoom = 0;
@@ -27,10 +26,7 @@ class MapComponent extends Component
   constructor(props) 
   {
     super(props);
-
-    let blur = 10;
-    let radius = 5;
-    
+   
     this.state = 
     { 
       center: [
@@ -56,26 +52,16 @@ class MapComponent extends Component
       county: new areaSelected(),
       municipality: new areaSelected()
     };
-    
-    const layer = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/' + process.env.REACT_APP_LMTOKEN + '/';
-    const tileGrid3857 = new OlGridWMTS(
-      {
-        tileSize: 256,
-        extent: [-20037508.342789, -20037508.342789, 20037508.342789, 20037508.342789],
-        resolutions: [156543.0339280410, 78271.51696402048, 39135.75848201023, 19567.87924100512, 9783.939620502561, 4891.969810251280, 2445.984905125640, 1222.992452562820, 611.4962262814100, 305.7481131407048, 152.8740565703525, 76.43702828517624, 38.21851414258813, 19.10925707129406,9.554628535647032, 4.777314267823516, 2.388657133911758, 1.194328566955879],
-        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-      }
-    );
 
     const LmMap = new OlLayerTile(
       {
       source: new OlSourceWMTS(
         {
-          url: layer,
+          url: layers.layer,
           layer: 'topowebb_nedtonad',
           format: 'image/png',
           matrixSet: '3857',
-          tileGrid: tileGrid3857,
+          tileGrid: layers.tileGrid3857,
           version: '1.0',
           tited: true,
           style: 'default',
@@ -86,86 +72,11 @@ class MapComponent extends Component
       zIndex: 0
     });
 
-    const Heatmap = new OlHeatmapLayer(
-      {
-        source: new OlVectorSource(
-          {
-            url: '/smallGeo.json',
-            format: new GeoJSON(),
-          }),
-        name: 'heatmap',
-        visible: false,
-        zIndex: 10,
-        blur: parseInt(blur),
-        radius: parseInt(radius),
-        opacity: 0.8,
-        gradient: this.predefinedColor.reverse(), //['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //
-      }
-    );
-    this.predefinedColor.reverse();
-
-    const county = new OlVectorLayer(
-      {
-        source: new OlVectorSource(
-          {
-            url: '/laen-kustlinjer.geo.json',
-            format: new GeoJSON()
-          }),
-        name: 'county',
-        style: styling.default,
-        zIndex: 20
-      }
-    );
-    const countySelected = new OlVectorLayer(
-      {
-        source: new OlVectorSource(),
-        name: 'countySelected',
-        zIndex: 21,
-        style: styling.selected,
-
-      }
-    );
-
-    const municipality = new OlVectorLayer(
-      {
-        source: new OlVectorSource(
-          {
-            url: '/kommuner-kustlinjer.geo.json',
-            format: new GeoJSON()
-          }
-        ),
-        name: 'municipality',
-        style: styling.default,
-        zIndex: 30,
-        visible: false,
-      }
-    );
-
-    const municipalitySelected = new OlVectorLayer(
-      {
-        source: new OlVectorSource(),
-        name: 'municipalitySelected',
-        zIndex: 31,
-        visible: false,
-        style: styling.selected,
-
-      }
-    );
-
-    const selected = new OlVectorLayer(
-      {
-        source: new OlVectorSource(),
-        name: 'selected',
-        zIndex: 5,
-        visible: false,
-        style: styling.selected
-      }
-    );
 
     const groundLayers = [ LmMap ];
-    this.topLayers = [ Heatmap, municipality, municipalitySelected, county, countySelected, selected ];
+    this.topLayers = [ layers.Heatmap, layers.municipality, layers.municipalitySelected, layers.county, layers.countySelected, layers.selected ];
 
-    Heatmap.getSource().on('addfeature', function(event) 
+    layers.Heatmap.getSource().on('addfeature', function(event) 
       {
         /*
         var level = event.feature.get('level');
@@ -223,7 +134,6 @@ class MapComponent extends Component
           duration: 1000
         }
       );
-  
     }
   }
   
@@ -234,6 +144,7 @@ class MapComponent extends Component
     const lan = this.findLayerByValue('name', 'county');
     const kommunVald = this.findLayerByValue('name', 'municipalitySelected');
     const lanVald = this.findLayerByValue('name', 'countySelected');
+    const heatmap = this.findLayerByValue('name', 'heatmap');
 
     if(level === 'municipality')
     {
@@ -242,7 +153,17 @@ class MapComponent extends Component
       kommunVald.setVisible(true);
       lan.setVisible(false);
       lanVald.setVisible(false);
+      heatmap.setVisible(false);
     } 
+    else if(level === 'heatmap')
+    {
+      lan.setVisible(false);
+      lanVald.setVisible(false);
+      kommun.setVisible(false);
+      kommunVald.setVisible(false);
+      heatmap.setVisible(true);
+    
+    }
     else
     {
       //console.log('swiching to county level');
@@ -250,6 +171,7 @@ class MapComponent extends Component
       kommunVald.setVisible(false);
       lan.setVisible(true);
       lanVald.setVisible(true);
+      heatmap.setVisible(false);
     }
 
     setTimeout(() => this.loadValues(level,false), 2000);		
@@ -374,7 +296,7 @@ class MapComponent extends Component
     });
 
     let hover;
-    const hoverFunc = function(pixel,type = 'hover') 
+    const hoverFunc = function(pixel) 
     {
       const feature = map.forEachFeatureAtPixel(pixel, function(feature) 
       {
@@ -405,7 +327,7 @@ class MapComponent extends Component
       {
       source: new OlVectorSource(),
       map: this.olmap,
-      zIndex: 50,
+      zIndex: 150,
       style: function(feature) 
       {
         styling.label.getText().setText(feature.get('name'));
@@ -513,18 +435,14 @@ class MapComponent extends Component
   {
     const selectedLayer = this.findLayerByValue('name', layer);
     const feature = selectedLayer.getSource().getFeatureById(featureName);
-    // feature.setStyle(style);
     selectedLayer.getSource().removeFeature(feature);
   }
 
   findLayerByValue(key, name)
   {
     let found = {};
-    this.topLayers.map((layer,i) => {
-      if(layer.get(key) === name)
-      {
-        found =  layer;
-      }
+    this.topLayers.forEach((layer) => {
+      if(layer.get(key) === name) found = layer; 
     });
     return found;
   }
@@ -555,15 +473,18 @@ class MapComponent extends Component
     return (
       <div>
         <div id="map" style={{ width: "100%", height: "100%" }}>
-          <ul>
-          {this.topLayers.map((layer, i) => {     
-            return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
-          })}
-          </ul>
         </div>
       </div>
     );
   }
 }
+/*  links to toggle layers
 
+          <ul>
+          {this.topLayers.map((layer, i) => {     
+            return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
+          })}
+          </ul>
+
+*/ 
 export default MapComponent;
