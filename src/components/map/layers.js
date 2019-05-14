@@ -50,7 +50,7 @@ class mapLayers
     {
       source: new OlVectorSource(
         {
-          url: '/smallGeo.json',
+          url: '/mockHeatmap.json',
           format: new GeoJSON(),
         }),
       name: 'heatmap',
