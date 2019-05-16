@@ -4,13 +4,11 @@ import OlView from "ol/View";
 import {getCenter} from 'ol/extent.js';
 import OlLayerTile from "ol/layer/Tile";
 import OlSourceWMTS from "ol/source/WMTS";
-import OlVectorLayer from 'ol/layer/Vector.js';
-import OlVectorSource from "ol/source/Vector";
 import {Fill, Style } from 'ol/style.js';
 import 'ol/ol.css';
 
 import mapStyling from './styling';
-import mapLayers from './layers'
+import mapLayers from './layers';
 import api from '../api/api';
 
 const styling = new mapStyling();
@@ -38,7 +36,6 @@ class MapComponent extends Component
       q: '',
       level: 'county',
     };
-
     this.predefinedColor = 
     [
       process.env.REACT_APP_COLOR1,
@@ -73,7 +70,16 @@ class MapComponent extends Component
     });
 
     const groundLayers = [ LmMap ];
-    this.topLayers = [ layers.Heatmap, layers.municipality, layers.municipalitySelected, layers.county, layers.countySelected, layers.selected ];
+    this.topLayers = 
+    [ 
+      layers.Heatmap, 
+      layers.municipality, 
+      layers.municipalitySelected, 
+      layers.county, 
+      layers.countySelected, 
+      layers.selected,
+      layers.hover 
+    ];
 
     layers.Heatmap.getSource().on('addfeature', function(event) 
       {
@@ -148,29 +154,30 @@ class MapComponent extends Component
     if(level === 'municipality')
     {
       //console.log('swiching to municipality level');
-      kommun.setVisible(true);
-      kommunVald.setVisible(true);
-      lan.setVisible(false);
-      lanVald.setVisible(false);
+      kommun.setStyle(styling.default);
+      kommunVald.setStyle(styling.default);
+      lan.setStyle(styling.clean);
+      lanVald.setStyle(styling.clean);
       heatmap.setVisible(false);
     } 
     else if(level === 'heatmap')
     {
-      lan.setVisible(false);
-      lanVald.setVisible(false);
-      kommun.setVisible(false);
-      kommunVald.setVisible(false);
+      //console.log('swiching to heatmap')
+      lan.setStyle(styling.clean);
+      lanVald.setStyle(styling.clean);
+      kommun.setStyle(styling.clean);
+      kommunVald.setStyle(styling.clean);
       heatmap.setVisible(true);
     
     }
     else
     {
       //console.log('swiching to county level');
-      kommun.setVisible(false);
-      kommunVald.setVisible(false);
-      lan.setVisible(true);
-      lanVald.setVisible(true);
-      heatmap.setVisible(false);
+      kommun.setStyle(styling.clean);
+      kommunVald.setStyle(styling.clean);
+      lan.setStyle(styling.default);
+      lanVald.setStyle(styling.default);
+      heatmap.setVisible(styling.clean);
     }
 
     setTimeout(() => this.loadValues(level,false), 2000);		
@@ -243,9 +250,9 @@ class MapComponent extends Component
     this.setState({ q: this.jobTechVaribles.getAttribute('data-location') });
     let found = {};
     found = this.findFeature(this.state.q);
-    if(this.state.level !== found.level) this.toggleLevel(found.level);
     if(found.feature)
     {
+      if(this.state.level === 'county') this.toggleLevel('municipality');
       this.addSelect(found.feature, found.level);
     } 
     else
@@ -272,15 +279,13 @@ class MapComponent extends Component
     this.globalJobTechVariables();
     const parent = this;
     const map = this.olmap;
+    let hovered;
 
     map.setTarget('map');
     setTimeout(() => this.loadValues('county'), 2000);		
 
-    // Listen to map changes
     map.on('moveend', (evt) => 
     {
-      //console.log(this.state);
-      //console.log(this.selected);
       let center = map.getView().getCenter();
       let zoom = map.getView().getZoom();
       this.setState({ center, zoom });
@@ -296,7 +301,12 @@ class MapComponent extends Component
           //console.log('unselect municipality');
 
           this.removeMark(this.selected.municipality.name, 'selected');
+          this.removeMark('', 'municipalitySelected');
           this.selected.municipality = new areaSelected();
+          if(this.selected.county.name.length > 0)
+          {
+            this.setState({ q: this.selected.county.name });
+          }
           parent.toggleLevel('county');
 
         }
@@ -305,42 +315,10 @@ class MapComponent extends Component
 
     map.on('pointermove', function(evt) 
     {
-      if (evt.dragging) 
-      {
-        return;
-      }
+      if(evt.dragging) return;
+
       let pixel = map.getEventPixel(evt.originalEvent);
-      hoverFunc(pixel);
-    });
-
-    map.on('click', function(evt) 
-    {
-      map.forEachFeatureAtPixel(evt.pixel, function(feature) 
-      {
-        if(feature !== undefined)
-        {
-          // admin_level 4 = county
-          if(parent.selected.county.name !== feature.get('name') && feature.get('admin_level') === '4'){
-            //console.log([ feature, feature.get('name') ]);
-            parent.addSelect(feature, 'county');
-            parent.toggleLevel('municipality');
-          };
-          // admin_level 7 = municipality
-          if(parent.selected.municipality.name !== feature.get('name') && feature.get('admin_level') === '7'){
-            //console.log([ feature.get('admin_level'), feature.get('name')]);
-            parent.addSelect(feature, 'municipality');
-
-          };
-        
-        }
-      });
-
-    });
-
-    let hover;
-    const hoverFunc = function(pixel) 
-    {
-      const feature = map.forEachFeatureAtPixel(pixel, function(feature) 
+      let feature = map.forEachFeatureAtPixel(pixel, function(feature) 
       {
         if(parent.state.level === 'county' && feature.get('admin_level') === '4') {
           return feature;
@@ -351,68 +329,76 @@ class MapComponent extends Component
 
       });
 
-      if (feature !== hover) 
+      if (feature !== hovered) 
       {
-        if (hover)
+        if (hovered)
         {
-          hoverOverlay.getSource().removeFeature(hover);
+          layers.hover.getSource().removeFeature(hovered);
         }
         if (feature) 
         {
-          hoverOverlay.getSource().addFeature(feature);
+          feature = feature.clone();
+          feature.setStyle(function(feature) 
+          {
+            styling.label.getText().setText(feature.get('name'));
+            return [styling.label,styling.highlight];
+          });
+          layers.hover.getSource().addFeature(feature);
         }
-        hover = feature;
+        hovered = feature;
       }
-    };
 
-    const hoverOverlay = new OlVectorLayer(
-      {
-      source: new OlVectorSource(),
-      map: this.olmap,
-      zIndex: 150,
-      style: function(feature) 
-      {
-        styling.label.getText().setText(feature.get('name'));
-        return [styling.label,styling.highlight];
-      }
     });
+
+    map.on('click', function(evt) 
+    {
+      let found = false;
+      map.forEachFeatureAtPixel(evt.pixel, function(feature) 
+      {
+        //if(found) return;
+        if(feature !== undefined)
+        {
+          // admin_level 4 = county
+          if(
+              parent.selected.county.name !== feature.get('name') && 
+              feature.get('admin_level') === '4' 
+            ){
+            if(parent.state.level === 'county')
+            {
+              parent.addSelect(feature, 'county');
+              parent.toggleLevel('municipality');
+              found = true;
+            }
+            else
+            {
+              // if we select a municipality from other county, we select that county when zooming out
+              parent.addSelect(feature, 'county', false);
+            }
+
+          };
+
+          // admin_level 7 = municipality
+          if(
+              parent.selected.municipality.name !== feature.get('name') && 
+              feature.get('admin_level') === '7' &&
+              parent.state.level === 'municipality' &&
+              found !== true     
+            ){
+            //console.log([ feature.get('admin_level'), feature.get('name')]);
+            parent.addSelect(feature, 'municipality');
+            found = true;
+
+          };
+        
+        }
+      });
+
+    });
+
   }
 
   shouldComponentUpdate(nextProps, nextState) 
   {
-    let center = this.olmap.getView().getCenter();
-    let zoom = this.olmap.getView().getZoom();
-    if (center === nextState.center && zoom === nextState.zoom) return false;
-    return true;
-  }
-  
-  addSelect(feature,type) {
-
-    const selectedLayer = this.findLayerByValue('name', 'selected');
-    if (this.selected[this.state.level].name.length > 0)
-    {
-      //select one county or municipality at the time
-      this.removeMark(this.selected[this.state.level].name, 'selected');
-    }
-    feature.setStyle(styling.selected);
-    selectedLayer.getSource().addFeature(feature);
-    this.selected[type].name = feature.get('name');
-    this.selected[type].zoom = this.state.zoom;
-    if (this.selected['municipality'].zoom === undefined) 
-    {
-      this.selected['municipality'].zoom = this.state.zoom;
-    }
-    feature.setId(this.selected[type].name);
-    this.toggleLayer(selectedLayer, true);
-    let extent = feature.getGeometry().getExtent();
-    this.setState(
-      { 
-        q: feature.get('name'),
-        center: getCenter(extent), 
-        extent: extent 
-      }
-    );
-
     if(this.jobTechVaribles)
     {
       if(this.jobTechVaribles.getAttribute('data-location') !== this.state.q)
@@ -421,6 +407,41 @@ class MapComponent extends Component
       }
     }
 
+    let center = this.olmap.getView().getCenter();
+    let zoom = this.olmap.getView().getZoom();
+    if(center === nextState.center && zoom === nextState.zoom) return false;
+    return true;
+  }
+  
+  addSelect(feature,type, selectIt = true) {
+
+    feature = feature.clone();
+    const selectedLayer = this.findLayerByValue('name', 'selected');
+    if(this.selected[type].name.length > 0)
+    {
+      //select one county or municipality at the time
+      this.removeMark(this.selected[type].name, 'selected');
+    }
+    selectedLayer.getSource().addFeature(feature);
+    this.selected[type].name = feature.get('name');
+    if(selectIt) this.selected[type].zoom = this.state.zoom;
+    if(this.selected['municipality'].zoom === undefined) 
+    {
+      this.selected['municipality'].zoom = this.state.zoom;
+    }
+    feature.setId(this.selected[type].name);
+    if(selectIt) 
+    {
+      this.toggleLayer(selectedLayer, true);
+      let extent = feature.getGeometry().getExtent();
+      this.setState(
+        { 
+          q: feature.get('name'),
+          center: getCenter(extent), 
+          extent: extent 
+        }
+      );
+    }
   }
 
   addMarks(marks, opt) 
@@ -436,10 +457,7 @@ class MapComponent extends Component
     let options = Object.assign(standardsOpt, opt);
     const selectedLayer = this.findLayerByValue('name', options.layer);
 
-    if(options.clear)
-    {
-      selectedLayer.getSource().clear();
-    }
+    if(options.clear) selectedLayer.getSource().clear();
     let feature = {};
     marks.forEach(function(mark){
       feature = mark.feature.clone();
@@ -455,9 +473,6 @@ class MapComponent extends Component
         styling.label.getText().setText(mark.text);
         return [styling.circle,styling.label,fill];
       });
-      //console.log('styling...');
-      //feature.setId(options.id);
-  
     });
 
     this.toggleLayer(selectedLayer, true);
@@ -478,8 +493,15 @@ class MapComponent extends Component
   removeMark(featureName, layer) 
   {
     const selectedLayer = this.findLayerByValue('name', layer);
-    const feature = selectedLayer.getSource().getFeatureById(featureName);
-    selectedLayer.getSource().removeFeature(feature);
+    if(featureName === '')
+    {
+      selectedLayer.getSource().clear();
+    }
+    else
+    {
+      const feature = selectedLayer.getSource().getFeatureById(featureName);
+      selectedLayer.getSource().removeFeature(feature);
+    }
   }
 
   findLayerByValue(key, name)
@@ -520,11 +542,11 @@ class MapComponent extends Component
 }
 /*  links to toggle layers
 
-          <ul>
-          {this.topLayers.map((layer, i) => {     
-            return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
-          })}
-          </ul>
+      <ul>
+        {this.topLayers.map((layer, i) => {     
+          return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
+        })}
+      </ul>
 
 */ 
 export default MapComponent;
