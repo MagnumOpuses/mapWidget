@@ -1,108 +1,124 @@
-import {Fill, Stroke, Style, Text, Circle as CircleStyle,} from 'ol/style.js';
+import { Fill, Stroke, Style, Text, Circle as CircleStyle } from 'ol/style.js';
 
 class mapStyling 
 {
-  circle = new Style({
-    image: new CircleStyle({
+  clean = new Style(
+  {
+    fill: new Fill(
+    {
+      color: 'rgba(255,255,255, 0)'
+    }),
+    stroke: new Stroke(
+    {
+      color: 'rgba(255,255,255, 0)',
+      width: 0
+    })
+  });
+
+  circle = new Style(
+  {
+    image: new CircleStyle(
+    {
       radius: 12,
       stroke: new Stroke(
-        {
-          color: '#000',
-          width: 1
-        }
-      ),
-      fill: new Fill({
-        color: '#FFF'
+      {
+        color: 'rgba(0,0,0, 1)',
+        width: 1
+      }),
+      fill: new Fill(
+      {
+        color: 'rgba(255,255,255, 1)'
       })
     }),
-    geometry: function(feature){
+    geometry: function(feature)
+    {
       let retPoint;
-      if (feature.getGeometry().getType() === 'MultiPolygon') {
+      if (feature.getGeometry().getType() === 'MultiPolygon') 
+      {
         retPoint =  feature.getGeometry().getPolygon(0).getInteriorPoint();
-      } else if (feature.getGeometry().getType() === 'Polygon') {
+      } 
+      else if (feature.getGeometry().getType() === 'Polygon') 
+      {
         retPoint = feature.getGeometry().getInteriorPoint();
       }
       return retPoint;
     }
-  })
+  });
 
-  label = new Style({
-    geometry: function(feature){
+  label = new Style(
+  {
+    geometry: function(feature)
+    {
       let retPoint;
-      if (feature.getGeometry().getType() === 'MultiPolygon') {
+      if (feature.getGeometry().getType() === 'MultiPolygon') 
+      {
         retPoint =  feature.getGeometry().getPolygon(0);
-      } else if (feature.getGeometry().getType() === 'Polygon') {
+      } 
+      else if (feature.getGeometry().getType() === 'Polygon') 
+      {
         retPoint = feature.getGeometry();
       }
       return retPoint;
     },
     text: new Text(
-      {
+    {
       font: 'bold 12px Calibri,sans-serif',
       overflow: true,
       placement : "point",
       fill: new Fill(
-        {
-          color: '#000'
-        }
-      ),
+      {
+        color: '#000'
+      }),
       stroke: new Stroke(
-        {
-          color: '#ccc',
-          width: 2
-        }
-      )
+      {
+        color: '#ccc',
+        width: 2
       })
+    })
   });
 
   default = new Style(
-    {
+  {
     fill: new Fill(
-      {
-        color: 'rgba(236,241,240, 0.4)'
-      }
-    ),
+    {
+      color: 'rgba(236,241,240, 0)'
+    }),
     stroke: new Stroke(
-      {
-        color: '#333',
-        width: 1
-      }
-    )
+    {
+      color: 'rgba(70,70,70, 1)',
+      width: 1
+    })
   });
 
   highlight = new Style(
-    {
-    stroke: new Stroke(
-      {
-        color: '#000',
-        width: 2
-      }
-    ),
+  {
     fill: new Fill(
-      {
-        color: 'rgba(255,249,224,0.5)'
-      }
-    ),
+    {
+      color: 'rgba(255,249,224,0.5)'
+    }),
+    stroke: new Stroke(
+    {
+      color: 'rgba(0,0,0, 1)',
+      width: 2
+    }),
     text: new Text(
-      {
+    {
       font: 'bold 12px Calibri,sans-serif',
       overflow: true,
       fill: new Fill(
-        {
-          color: '#000'
-        }
-      ),
+      {
+        color: 'rgba(0,0,0, 1)',
+      }),
     })
   });
 
   selected = new Style(
-    {
+  {
     stroke: new Stroke(
-      {
-        color: '#333',
-        width: 5
-      }
-    )
+    {
+      color: 'rgba(70,70,70, 1)',
+      width: 3
+    })
   });
 
 }

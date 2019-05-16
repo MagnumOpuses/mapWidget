@@ -6,7 +6,9 @@ import OlVectorLayer from 'ol/layer/Vector.js';
 import OlVectorSource from "ol/source/Vector";
 import {GeoJSON} from 'ol/format';
 
-import mapstyling from './styling';
+import mapStyling from './styling';
+const styling = new mapStyling();
+
 
 class mapLayers 
 {
@@ -76,7 +78,7 @@ class mapLayers
           format: new GeoJSON()
         }),
       name: 'county',
-      style: mapstyling.default,
+      style: styling.default,
       zIndex: 20
     }
   );
@@ -86,7 +88,7 @@ class mapLayers
       source: new OlVectorSource(),
       name: 'countySelected',
       zIndex: 21,
-      style: mapstyling.selected,
+      style: styling.selected,
 
     }
   );
@@ -100,9 +102,8 @@ class mapLayers
         }
       ),
       name: 'municipality',
-      style: mapstyling.default,
+      style: styling.clean,
       zIndex: 30,
-      visible: false,
     }
   );
 
@@ -112,7 +113,7 @@ class mapLayers
       name: 'municipalitySelected',
       zIndex: 31,
       visible: false,
-      style: mapstyling.selected,
+      style: styling.selected,
 
     }
   );
@@ -121,9 +122,17 @@ class mapLayers
     {
       source: new OlVectorSource(),
       name: 'selected',
-      zIndex: 5,
+      zIndex: 55,
       visible: false,
-      style: mapstyling.selected
+      style: styling.selected
+    }
+  );
+
+  hover = new OlVectorLayer(
+    {
+      source: new OlVectorSource(),
+      name: 'hover',
+      zIndex: 75,
     }
   );
 
