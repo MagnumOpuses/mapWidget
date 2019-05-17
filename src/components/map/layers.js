@@ -122,7 +122,7 @@ class mapLayers
     {
       source: new OlVectorSource(),
       name: 'selected',
-      zIndex: 55,
+      zIndex: 5,
       visible: false,
       style: styling.selected
     }

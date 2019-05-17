@@ -15,8 +15,9 @@ const styling = new mapStyling();
 const layers = new mapLayers();
 
 class areaSelected {
-    zoom = 0;
-    name = '';
+  zoom = 0;
+  name = '';
+
 }
 
 class MapComponent extends Component 
@@ -155,9 +156,9 @@ class MapComponent extends Component
     {
       //console.log('swiching to municipality level');
       kommun.setStyle(styling.default);
-      kommunVald.setStyle(styling.default);
+      kommunVald.setVisible(true);
       lan.setStyle(styling.clean);
-      lanVald.setStyle(styling.clean);
+      lanVald.setVisible(false);
       heatmap.setVisible(false);
     } 
     else if(level === 'heatmap')
@@ -174,13 +175,13 @@ class MapComponent extends Component
     {
       //console.log('swiching to county level');
       kommun.setStyle(styling.clean);
-      kommunVald.setStyle(styling.clean);
+      kommunVald.setVisible(false);
       lan.setStyle(styling.default);
-      lanVald.setStyle(styling.default);
+      lanVald.setVisible(true);
       heatmap.setVisible(styling.clean);
     }
 
-    setTimeout(() => this.loadValues(level,false), 2000);		
+    this.populate();	
   }
 
   colorCodeValue(total, value)
@@ -198,9 +199,12 @@ class MapComponent extends Component
     let found = {};
     layers.forEach(layerName => {
       let layer = this.findLayerByValue('name', layerName);
+      console.log([ featureName , layer]);
       layer.getSource().forEachFeature(function(feature)
       {
+        console.log("A");
         if(found.feature) return;
+        console.log([ featureName , feature.get('name')]);
         if(feature.get('name') === featureName) 
         {
           found = {
@@ -214,23 +218,21 @@ class MapComponent extends Component
 
   }
 
-  async loadValues(area, zoomResult = true) 
+  findFeatures(array, total, zoomResult = true, area = this.state.level)
   {
-    const resp = await api(this.state.q);
+    const parent = this;
     let marks = [];
     let found = false;
-    const total = resp.data.results.total;
-    const parent = this;
-    resp.data.results[area].forEach(fetchedRow => {
-        found = this.findFeature(fetchedRow.name, [area])
-        if(found.feature)
-        {
-          marks.push({
-            feature: found.feature,
-            text: fetchedRow.value.toString(),
-            color: parent.colorCodeValue(total,fetchedRow.value.toString())
-          });
-        }
+    array.forEach(fetchedRow => {
+      found = this.findFeature(fetchedRow.name)
+      if(found.feature)
+      {
+        marks.push({
+          feature: found.feature,
+          text: fetchedRow.value.toString(),
+          color: parent.colorCodeValue(total,fetchedRow.value.toString())
+        });
+      }
     });
     if(marks.length) {
       this.addMarks(
@@ -243,6 +245,11 @@ class MapComponent extends Component
       );
     }
 
+  }
+  async loadValues(area, zoomResult = true) 
+  {
+    const resp = await api(this.state.q);
+    this.findFeatures(resp.data.results[area], resp.data.results.total,zoomResult);
   }
 
   handleChange(e) 
@@ -259,6 +266,22 @@ class MapComponent extends Component
     {
       console.log('can not find : ' + this.state.q);
     }
+  }
+  populate()
+  {
+    const parent = this;
+    setTimeout(function()
+    {
+      if(parent.props.mapData)
+      {
+        parent.findFeatures(parent.props.mapData.result, parent.props.mapData.total);
+      }
+      else
+      {
+        parent.loadValues('county');		
+      }
+    }, 2000);
+
   }
 
   globalJobTechVariables()
@@ -282,7 +305,7 @@ class MapComponent extends Component
     let hovered;
 
     map.setTarget('map');
-    setTimeout(() => this.loadValues('county'), 2000);		
+    this.populate();
 
     map.on('moveend', (evt) => 
     {
@@ -359,10 +382,8 @@ class MapComponent extends Component
         if(feature !== undefined)
         {
           // admin_level 4 = county
-          if(
-              parent.selected.county.name !== feature.get('name') && 
-              feature.get('admin_level') === '4' 
-            ){
+          if(feature.get('admin_level') === '4' )
+          {
             if(parent.state.level === 'county')
             {
               parent.addSelect(feature, 'county');
@@ -399,6 +420,11 @@ class MapComponent extends Component
 
   shouldComponentUpdate(nextProps, nextState) 
   {
+    if(nextProps.MapData)
+    {
+      this.findFeatures(this.props.MapData.result, this.props.MapData.total);
+    }
+
     if(this.jobTechVaribles)
     {
       if(this.jobTechVaribles.getAttribute('data-location') !== this.state.q)
@@ -536,17 +562,18 @@ class MapComponent extends Component
       <div>
         <div id="map" style={{ width: "100%", height: "100%" }}>
         </div>
+        <ul>
+        {this.topLayers.map((layer, i) => {     
+          return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
+        })}
+      </ul>
       </div>
     );
   }
 }
 /*  links to toggle layers
 
-      <ul>
-        {this.topLayers.map((layer, i) => {     
-          return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
-        })}
-      </ul>
+
 
 */ 
 export default MapComponent;
