@@ -13,10 +13,6 @@ const styling = new mapStyling();
 class mapLayers 
 {
   constructor() {
-    
-    this.blur = 10;
-    this.radius = 5;
-  
     this.layer = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/' + process.env.REACT_APP_LMTOKEN + '/';
     this.tileGrid3857 = new OlGridWMTS(
       {
@@ -58,14 +54,14 @@ class mapLayers
       name: 'heatmap',
       visible: false,
       zIndex: 10,
-      blur: parseInt(this.blur),
-      radius: parseInt(this.radius),
+      blur: parseInt(10),
+      radius: parseInt(5),
       opacity: 0.8,
       gradient: [
-        process.env.REACT_APP_COLOR1,
-        process.env.REACT_APP_COLOR2,
-        process.env.REACT_APP_COLOR3,
         process.env.REACT_APP_COLOR4,
+        process.env.REACT_APP_COLOR3,
+        process.env.REACT_APP_COLOR2,
+        process.env.REACT_APP_COLOR1,
       ], //['#D9FAF7', '#D9FAF7', '#A6F3ED', '#50E8DB', '#02DECC'], //
     }
   );
