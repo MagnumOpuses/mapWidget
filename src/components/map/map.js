@@ -609,18 +609,17 @@ class MapComponent extends Component
       <div>
         <div id="map" style={{ width: "100%", height: "100%" }}>
         </div>
-        <ul>
-        {this.topLayers.map((layer, i) => {     
-          return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
-        })}
-      </ul>
       </div>
     );
   }
 }
 /*  links to toggle layers
 
-
+      <ul>
+        {this.topLayers.map((layer, i) => {     
+          return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
+        })}
+      </ul>
 
 */ 
 export default MapComponent;
