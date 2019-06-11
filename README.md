@@ -1,8 +1,32 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![alt text][logo]
 
-## Available Scripts
+[logo]: https://github.com/MagnumOpuses/project-meta/blob/master/img/jobtechdev_black.png "JobTech dev logo"
+[A JobTech Project]( https://www.jobtechdev.se)
+# MapWidget
 
-In the project directory, you can run:
+this React component shows number of results in counties or municipalities. And can be used to interact both to and from. 
+The app can show what ever you want, we have built it for jobs. Read more about the this component [here](##MapWidget)
+
+## Version
+
+This project is a beta version. 
+
+## Getting Started
+
+This project was built with [Create React App](https://github.com/facebook/create-react-app), [OpenLayers](https://openlayers.org) and [Lantmäteriets Topografic map](https://www.lantmateriet.se/sv/Kartor-och-geografisk-information/Geodatatjanster/Visningstjanster/?faq=7e09).
+Everything is open source but you need to register at [Lantmäteriet](https://opendata.lantmateriet.se/#register) to get a key to be able to use the map.
+
+### Prerequisites
+
+You need to copy the [.env.default](./.env.default) to .env and add the api key from Lantmäteriet.<br>
+And you will need [npm](https://www.npmjs.com/) on your computer. 
+
+### Installation
+
+Run `npm install` to get required libraries. 
+
+
+## Create React App commands
 
 ### `npm start`
 
@@ -27,51 +51,67 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
 
-### Code Splitting
+## MapWidget 
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+File structure
+```
+my-app
+├── README.md - this file
+├── node_modules - needed libraries
+├── package.json - config file
+├── .gitignore - git ignore file
+├── .env.default - settings for the app/component
+├── public - from where the app runs
+│   ├── favicon.ico - browser favoicon
+│   ├── index.html  - running file
+│   ├── kommuner-kustlinjer.geo.json  - geo json polygons of municipalities
+│   ├── laen-kustlinjer.geo.json  - geo json polygons of counties
+│   └── manifest.json - react file
+└── src
+    components 
+      ├── api
+          └── api.js - file to fetch data from API
+      └── map
+          ├── custom.css - css for element in the map
+          ├── helpers.js - helping functions in the component
+          ├── layers.js - the layers in the map
+          ├── map.js - the main component file
+          └── styling - styling for the layers
+    ├── index.css - minor css
+    ├── index.js - running js file
+    └── serviceWorker.js - react file
+```
 
-### Analyzing the Bundle Size
+The MapWidget has three modes:
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+* County - shows counties. can be switched to Municipality after start by user
+* Municipality - shows municipalities. can be switched to County after start by user
+* Heatmap - shows a heatmap on available data
 
-### Making a Progressive Web App
+Data can be put into/get out of the component by:
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+* react props from parent
+  * height - string - css height styling
+  * width - string - css width styling
+  * mode - string - start mode
+  * location - string - an County or Municipality to select
+  * q - string to pass to API (`not complete yet`)
+  * mapData - obj  <br>
+    * total - number - totalt results<br>
+    * array - objects of results<br>
+      * name - string with shown name
+      * value - value in area
+                  
 
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+* data attributes from a element with the id "jobTechVaribles"
+  * location - string - an County or Municipality to select
+  * q - string to pass to API
+* API - the heatmap uses the `REACT_APP_DEV_API_BASEURL`and `REACT_APP_DEV_API_URL` from the .env file.
 
 
-## OpenLayers
-
-this project uses OpenLayers to show maps from Lantmäteriet(https://www.lantmateriet.se/sv/Kartor-och-geografisk-information/Geodatatjanster/Visningstjanster/?faq=7e09)
-
-We use Vector layers, heatmap and features thru OpenLayers if you want to know more about how to use them read it in the OpenLayers documentation. 
-OpenLayers documentation lives here:
-https://openlayers.org/en/latest/apidoc/
+The element with id will be updated with data from component as well. 
+Also on row 521 location can be passed to parent function if you use the map component in another component.
