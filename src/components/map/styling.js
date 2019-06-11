@@ -19,7 +19,7 @@ class mapStyling
   {
     image: new CircleStyle(
     {
-      radius: 12,
+      radius: 16,
       stroke: new Stroke(
       {
         color: 'rgba(0,0,0, 1)',
@@ -62,7 +62,7 @@ class mapStyling
     },
     text: new Text(
     {
-      font: 'bold 12px Calibri,sans-serif',
+      font: 'bold 16px Open-sans,sans-serif',
       overflow: true,
       placement : "point",
       fill: new Fill(
@@ -94,12 +94,12 @@ class mapStyling
   {
     fill: new Fill(
     {
-      color: 'rgba(255,249,224,0.5)'
+      color: 'rgba(0,132,121,0.5)'
     }),
     stroke: new Stroke(
     {
-      color: 'rgba(0,0,0, 1)',
-      width: 2
+      color: 'rgba(2,222,204, 1)',
+      width: 3
     }),
     text: new Text(
     {

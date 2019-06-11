@@ -13,8 +13,12 @@ let mapData =
       "value": 50
     },
     { 
-      "name": 'Nacka kommun',
-      "value": 50
+      "name": 'Nacka',
+      "value": 25
+    },
+    {
+      "name": "Botkyrka",
+      "value": 25
     }
   ],
   total: 111
@@ -22,7 +26,7 @@ let mapData =
 let mode = 'heatmap';
 
 
-ReactDOM.render(<MapComponent mode={mode}/>, document.getElementById('root'));
+ReactDOM.render(<MapComponent />, document.getElementById('root'));
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

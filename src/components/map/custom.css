@@ -1,0 +1,28 @@
+/* put custom css for the map */
+
+#map *:focus{
+  outline: none;
+}
+
+#map li {
+  display: inline-block;
+  list-style: none;
+}
+
+#map ul {
+  position: absolute;
+  margin: 0.5em;
+  z-index: 10;
+  right: 0.5em;
+}
+
+#map li button {
+  color: #000;
+  border: 1px solid #02DECC;
+  padding: 0.3em 0.8em;
+  background-color: #4aefe2;
+  font-size: 16px;
+}
+ #map li button.selected {
+  background-color: #04cbbb;
+}
