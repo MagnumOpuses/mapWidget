@@ -300,6 +300,13 @@ class MapComponent extends Component
     {
       this.toggleLevel(jtv.getAttribute('data-mode'));
     }
+    if(
+      jtv.getAttribute('data-zoom') !== undefined &&
+      jtv.getAttribute('data-zoom') !== this.olmap.zoom
+      )
+    {
+      this.setState({ zoom: jtv.getAttribute('data-zoom') });
+    }
   }
 
   componentDidMount() 
@@ -322,6 +329,12 @@ class MapComponent extends Component
     let hovered;
 
     map.setTarget('map');
+
+    map.on('rendercomplete', (evt) => 
+    {
+      let zoom = map.getView().getZoom();
+      that.setState({ zoom });
+    });
 
     map.on('moveend', (evt) => 
     {
@@ -379,8 +392,8 @@ class MapComponent extends Component
           feature = feature.clone();
           feature.setStyle(function(feature) 
           {
-            styling.label.getText().setText(feature.get('name'));
-            return [styling.label,styling.highlight];
+            styling.labelLower.getText().setText(feature.get('name'));
+            return [styling.labelLower,styling.highlight];
           });
           layers.hover.getSource().addFeature(feature);
         }
@@ -501,13 +514,17 @@ class MapComponent extends Component
     {
       // If the jobTechVaribles is not the same as the map, update them
       const jvt = this.jobTechVaribles;
-      if(jvt.getAttribute('data-location') !== this.state.location)
+      if(jvt.getAttribute('data-location') !== nextState.location)
       {
-        jvt.setAttribute('data-location', this.state.location);
+        jvt.setAttribute('data-location', nextState.location);
       }
-      if(jvt.getAttribute('data-q') !== this.state.q)
+      if(jvt.getAttribute('data-q') !== nextState.q)
       {
-        jvt.setAttribute('data-q', this.state.q);
+        jvt.setAttribute('data-q', nextState.q);
+      }
+      if(jvt.getAttribute('data-zoom') !== nextState.zoom)
+      {
+        jvt.setAttribute('data-zoom', nextState.zoom);
       }
     }
 
@@ -595,8 +612,8 @@ class MapComponent extends Component
             color: mark.color
           })
         });
-        styling.label.getText().setText(mark.text);
-        return [styling.circle,styling.label,fill];
+        styling.labelUpper.getText().setText(mark.text);
+        return [styling.circle,styling.labelUpper,fill];
       });
     });
 
