@@ -2,8 +2,6 @@ import React, { Component } from "react";
 import OlMap from "ol/Map";
 import OlView from "ol/View";
 import {getCenter} from 'ol/extent.js';
-import OlLayerTile from "ol/layer/Tile";
-import OlSourceWMTS from "ol/source/WMTS";
 import {Fill, Style } from 'ol/style.js';
 import 'ol/ol.css';
 import './custom.css';
@@ -57,36 +55,6 @@ class MapComponent extends Component
       municipality: new areaSelected()
     };
 
-    const LmMap = new OlLayerTile(
-      {
-      source: new OlSourceWMTS(
-        {
-          url: layers.layer,
-          layer: 'topowebb_nedtonad',
-          format: 'image/png',
-          matrixSet: '3857',
-          tileGrid: layers.tileGrid3857,
-          version: '1.0',
-          tited: true,
-          style: 'default',
-          crossOrigin: 'anonymous'
-        }
-      ),
-      name: 'Karta',
-      zIndex: 0
-    });
-
-    const groundLayers = [ LmMap ];
-    this.topLayers = 
-    [ 
-      layers.heatmap, 
-      layers.municipality, 
-      layers.municipalitySelected, 
-      layers.county, 
-      layers.countySelected, 
-      layers.selected,
-      layers.hover 
-    ];
     /*
     layers.heatmap.getSource().on('addfeature', function(event) 
       {
@@ -111,7 +79,7 @@ class MapComponent extends Component
     this.olmap = new OlMap(
       {
         target: null,
-        layers: [...groundLayers, ...this.topLayers],
+        layers: [...layers.ground, ...layers.top],
         view: new OlView(
           {
             center: this.state.center,
@@ -126,6 +94,7 @@ class MapComponent extends Component
 
   updateMap() 
   {
+    //console.log('updating map');
     const duration = 1000;
     const map = this.olmap;
     if(this.state.extent.length === 4) 
@@ -153,46 +122,48 @@ class MapComponent extends Component
   
   toggleLevel(level = 'county')
   {
+    if(this.hovered) layers.hover.getSource().removeFeature(this.hovered);
     this.setState({ level: level });
+
     if(level === 'municipality')
     {
       //console.log('swiching to municipality level');
-      layers.municipality.setStyle(styling.default);
-      layers.municipalitySelected.setVisible(true);
-      layers.county.setStyle(styling.clean);
-      layers.countySelected.setVisible(false);
-      layers.heatmap.setVisible(false);
+      this.olmap.removeLayer('heatmap');
+      layers.municipality.setZIndex(30);
+      layers.municipalityValues.setVisible(true);
+      layers.county.setZIndex(-10);
+      layers.countyValues.setVisible(false);
       layers.selected.setVisible(true);
     } 
     else if(level === 'heatmap')
     {
-      //console.log('swiching to heatmap')
+      //console.log('swiching to heatmap');
+      /* TODO: remove county and municipality. Might delete results */
+      this.olmap.addLayer(layers.heatmap);      
+
       layers.county.setStyle(styling.clean);
-      layers.countySelected.setVisible(false);
+      layers.countyValues.setVisible(false);
       layers.municipality.setStyle(styling.clean);
-      layers.municipalitySelected.setVisible(false);
+      layers.municipalityValues.setVisible(false);
       layers.heatmap.setVisible(true);
       layers.hover.getSource().clear();
       layers.selected.setVisible(false);
-    
     }
-    else 
+    else
     {
       //console.log('swiching to county level');    
       //console.log('unselect municipality');
+      this.olmap.removeLayer('heatmap');
       this.removeMark(this.selected.municipality.name, 'selected');
-      this.removeMark('', 'municipalitySelected');
       this.selected.municipality = new areaSelected();
       if(this.selected.county.name.length > 0)
       {
-        let found = this.findFeature(this.selected.county.name, ['county']);
-        if(found.feature) this.addSelect(found.feature,found.level,false);
         this.setState({ location: this.selected.county.name });
       }
-      layers.municipality.setStyle(styling.clean);
-      layers.municipalitySelected.setVisible(false);
-      layers.county.setStyle(styling.default);
-      layers.countySelected.setVisible(true);
+      layers.municipality.setZIndex(-1);
+      layers.municipalityValues.setVisible(false);
+      layers.county.setZIndex(20);
+      layers.countyValues.setVisible(true);
       layers.heatmap.setVisible(false);
       layers.selected.setVisible(true);
     }
@@ -202,6 +173,8 @@ class MapComponent extends Component
   findFeature(featureName, layers = ['county', 'municipality'])
   {
     let found = {};
+    if(featureName === '') return false;
+    featureName = capitalize(featureName);
     layers.forEach(layerName => {
       let layer = this.findLayerByValue('name', layerName);
       layer.getSource().forEachFeature(function(feature)
@@ -228,11 +201,12 @@ class MapComponent extends Component
     let marks = [];
     let found = false;
     array.forEach(fetchedRow => {
-      found = this.findFeature(fetchedRow.name, [area] )
+      found = this.findFeature(fetchedRow.name)
       if(found.feature)
       {
         marks.push({
           feature: found.feature,
+          level: found.level,
           text: fetchedRow.value.toString(),
           color: colorCodeValue(fetchedRow.value.toString())
         });
@@ -242,7 +216,7 @@ class MapComponent extends Component
       this.addMarks(
         marks, 
         { 
-          layerExtent: true, 
+          layerExtent: false, 
           layer: area + 'Selected',
           clear: true
         }
@@ -264,48 +238,52 @@ class MapComponent extends Component
   handleChange() 
   {
     const jtv = this.jobTechVaribles;
+    let location = jtv.getAttribute('data-location');
+    let q = jtv.getAttribute('data-q');
+    let mode = jtv.getAttribute('data-mode');
+    let zoom = jtv.getAttribute('data-zoom');
     if(
-      jtv.getAttribute('data-location') !== undefined &&
-      this.state.location !== jtv.getAttribute('data-location')
+      location !== undefined &&
+      location !== this.state.location
       )
     {
       let found = {};
-      found = this.findFeature(jtv.getAttribute('data-location'));
+      found = this.findFeature(location);
       if(found.feature)
       {
-        this.setState({ location: jtv.getAttribute('data-location') });
+        this.setState({ location: location });
         if(this.state.level === 'county') this.toggleLevel('municipality');
         this.addSelect(found.feature, found.level);
       } 
       else
       {
-        console.log('can not find : ' + this.state.location);
+        console.log('can not find : ' + location);
       }
     }
     if(
-      jtv.getAttribute('data-q') !== undefined &&
-      this.state.q !== jtv.getAttribute('data-q')
+      q !== undefined &&
+      q !== this.state.q 
       )
     {
-      this.setState({ q: jtv.getAttribute('data-q') });
+      this.setState({ q: q });
       this.loadValues(this.state.level);
     }
     if(
-      jtv.getAttribute('data-mode') !== undefined &&
+      mode !== undefined &&
       ( 
-        jtv.getAttribute('data-mode') === 'heatmap' ||
-        jtv.getAttribute('data-mode') === 'county' ||
-        jtv.getAttribute('data-mode') === 'municipality'
+        mode === 'heatmap' ||
+        mode === 'county' ||
+        mode === 'municipality'
       ))
     {
-      this.toggleLevel(jtv.getAttribute('data-mode'));
+      this.toggleLevel(mode);
     }
     if(
-      jtv.getAttribute('data-zoom') !== undefined &&
-      jtv.getAttribute('data-zoom') !== this.olmap.zoom
+      zoom !== undefined &&
+      zoom !== this.olmap.zoom
       )
     {
-      this.setState({ zoom: jtv.getAttribute('data-zoom') });
+      this.setState({ zoom: zoom });
     }
   }
 
@@ -326,7 +304,7 @@ class MapComponent extends Component
       } 
     const that = this;
     const map = this.olmap;
-    let hovered;
+    this.hovered = '';
 
     map.setTarget('map');
 
@@ -334,6 +312,28 @@ class MapComponent extends Component
     {
       let zoom = map.getView().getZoom();
       that.setState({ zoom });
+      if(this.state.level === "county")
+      {
+        if(zoom < 6)
+        {
+          layers.countyValues.setVisible(false);
+        }
+        else
+        {
+          layers.countyValues.setVisible(true);
+        }
+      } 
+      else if (this.state.level === "municipality")
+      {
+        if(zoom < 8)
+        {
+          layers.municipalityValues.setVisible(false);
+        }
+        else
+        {
+          layers.municipalityValues.setVisible(true);
+        }
+      }
     });
 
     map.on('moveend', (evt) => 
@@ -381,12 +381,9 @@ class MapComponent extends Component
 
       });
 
-      if (feature !== hovered) 
+      if (feature !== this.hovered) 
       {
-        if (hovered)
-        {
-          layers.hover.getSource().removeFeature(hovered);
-        }
+        if (this.hovered) layers.hover.getSource().removeFeature(this.hovered);
         if (feature) 
         {
           feature = feature.clone();
@@ -397,7 +394,7 @@ class MapComponent extends Component
           });
           layers.hover.getSource().addFeature(feature);
         }
-        hovered = feature;
+        this.hovered = feature;
       }
 
     });
@@ -591,20 +588,34 @@ class MapComponent extends Component
   {
     const standardsOpt = {
       layerExtent: false,
-      layer: '',
       clear: false,
       zoomResult: false,
     } 
     let options = Object.assign(standardsOpt, opt);
     if(this.state.level === 'county') options.zoomResult = true;
-    const selectedLayer = this.findLayerByValue('name', options.layer);
 
-    if(options.clear) selectedLayer.getSource().clear();
+    if(options.clear) {
+      layers.countyValues.getSource().clear();
+      layers.county.getSource().clear();
+      layers.municipalityValues.getSource().clear();
+      layers.municipality.getSource().clear();
+    }
     let feature = {};
+    let numFeature = {};
     marks.forEach(function(mark){
       feature = mark.feature.clone();
-      selectedLayer.getSource().addFeature(feature);
+      numFeature = mark.feature.clone();
 
+      if(mark.level === 'county'){
+        layers.countyValues.getSource().addFeature(numFeature);
+        layers.county.getSource().addFeature(feature);
+
+      }
+      else if (mark.level === 'municipality')
+      {
+        layers.municipalityValues.getSource().addFeature(numFeature);
+        layers.municipality.getSource().addFeature(feature);
+      }
       feature.setStyle(function() 
       {
         let fill = new Style({
@@ -612,14 +623,18 @@ class MapComponent extends Component
             color: mark.color
           })
         });
-        styling.labelUpper.getText().setText(mark.text);
-        return [styling.circle,styling.labelUpper,fill];
+        return [fill];
       });
+      numFeature.setStyle(function() 
+      {
+        styling.labelUpper.getText().setText(mark.text);
+        return [styling.circle,styling.labelUpper];
+      });
+
     });
 
-    this.toggleLayer(selectedLayer, true);
     let extent = [];
-    if(options.layerExtent) extent = selectedLayer.getSource().getExtent();
+    //if(options.layerExtent) extent = selectedLayer.getSource().getExtent();
     if(!options.layerExtent) extent = feature.getGeometry().getExtent();
     if(options.zoomResult) {
       this.setState(
@@ -642,14 +657,14 @@ class MapComponent extends Component
     else
     {
       const feature = selectedLayer.getSource().getFeatureById(featureName);
-      selectedLayer.getSource().removeFeature(feature);
+      if (feature) selectedLayer.getSource().removeFeature(feature);
     }
   }
 
   findLayerByValue(key, name)
   {
     let found = {};
-    this.topLayers.forEach((layer) => 
+    layers.top.forEach((layer) => 
     {
       if(layer.get(key) === name) found = layer; 
     });
