@@ -5,7 +5,7 @@
 # MapWidget
 
 this React component shows number of results in counties or municipalities. And can be used to interact both to and from. 
-The app can show what ever you want, we have built it for jobs. Read more about the this component [here](##MapWidget)
+The app can show what ever you want, we have built it for jobs. Read more about the this component [here](#MapWidget)
 
 ## Version
 
@@ -50,12 +50,13 @@ You will also see any lint errors in the console.
 Launches the test runner in the interactive watch mode.<br>
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### `npm run build`
+### `npm run build` / Deployment
 
 Builds the app for production to the `build` folder.<br>
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.<br>
+The build is minified and the filenames include the hashes and put in the build folder.<br>
+
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
@@ -63,6 +64,9 @@ See the section about [deployment](https://facebook.github.io/create-react-app/d
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+
+
 
 ## MapWidget 
 
@@ -124,3 +128,14 @@ Data can be put into/get out of the component by:
 
 The element with id will be updated with data from component as well. 
 Also on row 521 location can be passed to parent function if you use the map component in another component.
+
+## Contributing
+
+Please if you find bugs or better solutions, please contact us or write a bug report. 
+
+## License
+
+This is an open source project, use it freely.
+
+
+## Acknowledgments
