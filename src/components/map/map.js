@@ -38,7 +38,7 @@ class MapComponent extends Component
       location: '',
       level: 'county',
       total: 0,
-      height: '400px',
+      height: 'calc(100vh - 80px)',
       width: 'auto'
     };
 
@@ -290,6 +290,7 @@ class MapComponent extends Component
   componentDidMount() 
   {
     if(isElementResized("map")) this.olmap.updateSize();
+    this.toggleLevel('county');
     this.jobTechVaribles = globalDivElement('jobTechVaribles');
 
     this.handleChange = this.handleChange.bind(this);
