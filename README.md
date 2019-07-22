@@ -5,7 +5,9 @@
 # MapWidget
 
 this React component shows number of results in counties or municipalities. And can be used to interact both to and from. 
-The app can show what ever you want, we have built it for jobs. Read more about the this component [here](#MapWidget)
+We have built it for jobs, but the component can show what ever you want. For example, number of cars in area.<br /> 
+
+Read more about the this component [here](#MapWidget)
 
 ## Version
 
@@ -20,6 +22,7 @@ Everything is open source but you need to register at [Lantmäteriet](https://op
 
 You need to copy the [.env.default](./.env.default) to .env and add the api key from Lantmäteriet.<br>
 And you will need [npm](https://www.npmjs.com/) on your computer. 
+Some kind of webserver optionally you can use Docker.
 
 ### Installation
 
@@ -65,10 +68,16 @@ You can learn more in the [Create React App documentation](https://facebook.gith
 
 To learn React, check out the [React documentation](https://reactjs.org/).
 
+## Docker
+you might need to run them with `sudo`
+
+1. goto project root
+2. run: `docker build . -t <image name>`
+3. run: `docker run -it -p 8080:8080 <image name>`
+4. open a browser of your choice and goto: `http://localhost:8080/`
 
 
-
-## MapWidget 
+## The component MapWidget 
 
 File structure
 ```
@@ -123,7 +132,7 @@ Data can be put into/get out of the component by:
 * data attributes from a element with the id "jobTechVaribles"
   * location - string - an County or Municipality to select
   * q - string to pass to API
-* API - the heatmap uses the `REACT_APP_DEV_API_BASEURL`and `REACT_APP_DEV_API_URL` from the .env file.
+* API - the heatmap uses the `REACT_APP_DEV_API_BASEURL` and `REACT_APP_DEV_API_URL` from the .env file.
 
 
 The element with id will be updated with data from component as well. 
@@ -131,11 +140,16 @@ Also on row 521 location can be passed to parent function if you use the map com
 
 ## Contributing
 
-Please if you find bugs or better solutions, please contact us or write a bug report. 
+We would love if you'd like to help us build and improve this product for the benefit of everyone. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org/) code of conduct.
+
+Any contributions, feedback and suggestions are more than welcome.
+
+Please read our guidelines for contribution [here](CONTRIBUTING.md).
 
 ## License
 
-This is an open source project, use it freely.
-
+[Apache License 2.0](LICENSE.md)
 
 ## Acknowledgments
+
+N/A
