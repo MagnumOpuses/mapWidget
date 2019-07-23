@@ -110,7 +110,7 @@ my-app
 
 The MapWidget has three modes:
 
-* County - shows counties. can be switched to Municipality after start by user
+* County - shows counties. can be switched to municipality after start by user
 * Municipality - shows municipalities. can be switched to County after start by user
 * Heatmap - shows a heatmap on available data
 
@@ -122,12 +122,16 @@ Data can be put into/get out of the component by:
   * mode - string - start mode
   * location - string - an County or Municipality to select
   * q - string to pass to API (`not complete yet`)
-  * mapData - obj  <br>
+  * mapData - obj (for county and municipalities)  <br>
     * total - number - totalt results<br>
     * array - objects of results<br>
       * name - string with shown name
       * value - value in area
-                  
+  * for the heatmap: 
+    * heatmapBlur - how much a point is going to blur out
+    * heatmapRadius - how big a point will be in pixels.
+    * heatmapGradient - 4 comma seperated css color values  
+    * heatmapSource - a geojson file or api with point data              
 
 * data attributes from a element with the id "jobTechVaribles"
   * location - string - an County or Municipality to select

@@ -23,10 +23,18 @@ let mapData =
   ],
   total: 111
 }
-let mode = 'heatmap';
 
-
-ReactDOM.render(<MapComponent />, document.getElementById('root'));
+ReactDOM.render(
+<MapComponent 
+  //mapData={mapData}
+  mode="heatmap"
+  heatmapBlur="20"
+  heatmapRadius="20"
+  heatmapGradient="#00f, #0ff, #0f0, #ff0, #f00"
+  heatmapSource="/map.geojson"
+  />, 
+  document.getElementById('root')
+);
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
