@@ -3,6 +3,9 @@ import OlMap from "ol/Map";
 import OlView from "ol/View";
 import {getCenter} from 'ol/extent.js';
 import {Fill, Style } from 'ol/style.js';
+import OlVectorSource from "ol/source/Vector";
+import {GeoJSON} from 'ol/format';
+
 import 'ol/ol.css';
 import './custom.css';
 
@@ -42,11 +45,29 @@ class MapComponent extends Component
       width: 'auto'
     };
 
-    if(this.props.height !== undefined){
-      this.state.height = this.props.height;
+    if(this.props.height !== undefined) this.state.height = this.props.height;
+    if(this.props.width !== undefined) this.state.width = this.props.width;
+
+    if(parseInt(this.props.heatmapBlur)) {
+      layers.heatmap.setBlur(parseInt(this.props.heatmapBlur));
     }
-    if(this.props.width !== undefined){
-      this.state.width = this.props.width;
+    
+    if(parseInt(this.props.heatmapRadius)) {
+      layers.heatmap.setRadius(parseInt(this.props.heatmapRadius));
+    }
+
+    if(this.props.heatmapGradient) {
+      layers.heatmap.setGradient(this.props.heatmapGradient.split(","));
+    }
+
+    if(this.props.heatmapSource) {
+      layers.heatmap.setSource(
+        new OlVectorSource(
+          {
+            url: this.props.heatmapSource,
+            format: new GeoJSON(),
+          }),
+      );
     }
 
     this.selected = 
@@ -308,6 +329,13 @@ class MapComponent extends Component
     this.hovered = '';
 
     map.setTarget('map');
+
+    if(this.props.mapData)
+    {
+      setTimeout(function(){
+        that.findFeatures(that.props.mapData.result);
+      },2000); // TODO: waiting for map to load before searching, make a better solution
+    }
 
     map.on('rendercomplete', (evt) => 
     {
@@ -693,33 +721,27 @@ class MapComponent extends Component
     if (this.state.level  !== 'county') areaLevelIsCounty = false;
     return (
         <div id="map" style={{ width: this.state.width, height: this.state.height }}>
-          <ul>
-            <li>
-              <button 
-                className={`ui button ${areaLevelIsCounty ? 'selected' : ''}` } 
-                onClick={e => this.toggleLevel('county')}>
-                  Län
-              </button>
-            </li>
-            <li>
-              <button 
-                className={`ui button ${areaLevelIsCounty ? '' : 'selected'}` } 
-                onClick={e => this.toggleLevel('municipality')}>
-                  Kommun
-              </button>
-            </li>
-          </ul>
+          {this.state.level !== 'heatmap' && 
+            <ul>
+              <li>
+                <button 
+                  className={`ui button ${areaLevelIsCounty ? 'selected' : ''}` } 
+                  onClick={e => this.toggleLevel('county')}>
+                    Län
+                </button>
+              </li>
+              <li>
+                <button 
+                  className={`ui button ${areaLevelIsCounty ? '' : 'selected'}` } 
+                  onClick={e => this.toggleLevel('municipality')}>
+                    Kommun
+                </button>
+              </li>
+            </ul>
+          }
         </div>
     );
   }
 }
-/*  links to toggle layers
 
-      <ul>
-        {this.topLayers.map((layer, i) => {     
-          return (<li key={i}><a href="#"  onClick={e => this.toggleLayer(i)}>{layer.get('name')}</a></li>) 
-        })}
-      </ul>
-
-*/ 
 export default MapComponent;
